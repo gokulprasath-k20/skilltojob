@@ -4,6 +4,7 @@ import JobCache from '@/models/JobCache';
 import { getUserFromRequest } from '@/lib/auth';
 import { analyzeResumeForJobs, explainJobMatch, extractTextFromImage } from '@/lib/ai';
 import axios from 'axios';
+// @ts-ignore
 import pdfParse from 'pdf-parse';
 
 interface RawJob {
