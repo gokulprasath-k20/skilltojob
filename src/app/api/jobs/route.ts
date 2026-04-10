@@ -113,6 +113,11 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
     
+    // Debug: Check if route is alive
+    if (req.headers.get('x-debug-ping') === 'true') {
+      return NextResponse.json({ status: 'alive', message: 'API Route is reachable' });
+    }
+    
     let resumeText = '';
 
     // Handle both JSON and FormData

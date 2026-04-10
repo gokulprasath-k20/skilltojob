@@ -44,6 +44,16 @@ export default function JobsPage() {
     setView('analyzing');
     setError('');
     try {
+      // DEBUG: Ping the API first to see if it's alive
+      const pingRes = await fetch('/api/jobs', { 
+        method: 'POST', 
+        headers: { 'x-debug-ping': 'true', Authorization: `Bearer ${token}` } 
+      });
+      if (!pingRes.ok) {
+        const pingTxt = await pingRes.text();
+        console.error('Ping failed:', pingTxt);
+      }
+
       const formData = new FormData();
       if (selectedFile) formData.append('file', selectedFile);
       if (resumeText.trim()) formData.append('resumeText', resumeText);
