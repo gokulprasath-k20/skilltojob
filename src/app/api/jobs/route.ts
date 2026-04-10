@@ -4,8 +4,6 @@ import JobCache from '@/models/JobCache';
 import { getUserFromRequest } from '@/lib/auth';
 import { analyzeResumeForJobs, explainJobMatch, extractTextFromImage } from '@/lib/ai';
 import axios from 'axios';
-// @ts-ignore
-import pdfParse from 'pdf-parse';
 
 interface RawJob {
   job_id?: string;
@@ -131,7 +129,9 @@ export async function POST(req: NextRequest) {
         const buffer = Buffer.from(await file.arrayBuffer());
         try {
           if (file.type === 'application/pdf') {
-            const pdfData = await pdfParse(buffer);
+            // Dynamically import to prevent module-level crashes on certain environments
+            const pdf = require('pdf-parse');
+            const pdfData = await pdf(buffer);
             resumeText = pdfData.text;
           } else if (file.type.startsWith('image/')) {
             const base64 = buffer.toString('base64');
