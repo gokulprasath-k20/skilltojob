@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 3: Normalize and add AI match explanations
-    const normalizedJobs = rawJobs.slice(0, 15).map((j: RawJob & { source?: string }, i: number) => ({
+    const normalizedJobs = rawJobs.slice(0, 5).map((j: RawJob & { source?: string }, i: number) => ({
       id: j.job_id || j.id || `job-${i}`,
       title: j.job_title || j.title || 'Software Engineer',
       company: j.employer_name || j.company || 'Tech Company',

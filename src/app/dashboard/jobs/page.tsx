@@ -53,8 +53,16 @@ export default function JobsPage() {
         headers: { Authorization: `Bearer ${token}` },
         body: formData, // the browser will automatically set the appropriate Content-Type for FormData
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to analyze');
+      
+      let data;
+      try {
+        data = await res.json();
+      } catch (err) {
+        throw new Error(`Server returned an invalid response (Status: ${res.status}). This could be a timeout or a server error.`);
+      }
+      
+      if (!res.ok) throw new Error(data?.error || 'Failed to analyze');
+      
       setExtractedData(data.extractedData);
       setJobs(data.jobs);
       setUsingMock(data.usingMock || false);
