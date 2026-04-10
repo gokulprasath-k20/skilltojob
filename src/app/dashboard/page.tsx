@@ -13,11 +13,19 @@ import {
   ExternalLink,
   GraduationCap,
   MapPin,
-  Github,
-  Linkedin,
   Globe,
   Plus
 } from 'lucide-react';
+
+// Brand icons were removed from Lucide v1, so we define them as custom SVGs
+const GithubIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+);
+
+const LinkedinIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+);
+
 
 const pipelineSteps = [
   {
@@ -203,9 +211,10 @@ export default function DashboardPage() {
               {profile?.bio || 'Passionate professional looking to leverage skills in a top-tier company. Update your profile to get better advice.'}
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
-              {profile?.links?.linkedin && <a href={profile.links.linkedin} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm"><Linkedin size={14} /></a>}
-              {profile?.links?.github && <a href={profile.links.github} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm"><Github size={14} /></a>}
+              {profile?.links?.linkedin && <a href={profile.links.linkedin} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm"><LinkedinIcon size={14} /></a>}
+              {profile?.links?.github && <a href={profile.links.github} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm"><GithubIcon size={14} /></a>}
               {profile?.links?.portfolio && <a href={profile.links.portfolio} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm"><Globe size={14} /> Portfolio</a>}
+
               <Link href="/dashboard/profile" className="btn btn-secondary btn-sm" style={{marginLeft: 'auto'}}>Edit Profile</Link>
             </div>
           </div>
