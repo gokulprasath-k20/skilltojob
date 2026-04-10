@@ -3,6 +3,7 @@ import connectDB from '@/lib/db';
 import JobCache from '@/models/JobCache';
 import { getUserFromRequest } from '@/lib/auth';
 import { analyzeResumeForJobs, explainJobMatch, extractTextFromImage } from '@/lib/ai';
+import { extractTextFromPDF } from '@/lib/parser';
 import axios from 'axios';
 
 interface RawJob {
@@ -129,10 +130,7 @@ export async function POST(req: NextRequest) {
         const buffer = Buffer.from(await file.arrayBuffer());
         try {
           if (file.type === 'application/pdf') {
-            // Dynamically import to prevent module-level crashes on certain environments
-            const pdf = require('pdf-parse');
-            const pdfData = await pdf(buffer);
-            resumeText = pdfData.text;
+            resumeText = await extractTextFromPDF(buffer);
           } else if (file.type.startsWith('image/')) {
             const base64 = buffer.toString('base64');
             resumeText = await extractTextFromImage(base64, file.type);
