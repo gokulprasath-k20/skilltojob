@@ -34,43 +34,48 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No readable text content found in your resume.' }, { status: 400 });
     }
 
-    // 1. Parse raw text to generic Resume JSON
-    const systemPrompt = `You are an expert Resume Parser. Given the raw text from a candidate's resume, extract the information and return ONLY a valid JSON object matching the following structure:
+    // Consolidate Parsing and Scoring into ONE AI call to prevent Vercel 10s timeout
+    const systemPrompt = `You are an expert Resume Parser and Career Coach. 
+Analyze the provided resume text and return a JSON object with two parts:
+1. "parsedData": A structured version of the resume.
+2. "scoreResults": An ATS score (0-100) with strengths and improvements.
+
+JSON Structure:
 {
-  "name": "",
-  "email": "",
-  "phone": "",
-  "location": "",
-  "summary": "",
-  "links": { "linkedin": "", "github": "", "website": "" },
-  "skills": ["skill1", "skill2"],
-  "experience": [ { "company": "", "role": "", "duration": "", "description": ["bullet 1"] } ],
-  "education": [ { "school": "", "degree": "", "field": "", "year": "", "gpa": "" } ],
-  "projects": [ { "name": "", "description": "", "tech": ["tech1"], "link": "" } ],
-  "certifications": ["cert1"]
+  "parsedData": {
+    "name": "", "email": "", "phone": "", "location": "", "summary": "",
+    "links": { "linkedin": "", "github": "", "website": "" },
+    "skills": [],
+    "experience": [{ "company": "", "role": "", "duration": "", "description": [] }],
+    "education": [{ "school": "", "degree": "", "field": "", "year": "", "gpa": "" }],
+    "projects": [{ "name": "", "description": "", "tech": [], "link": "" }],
+    "certifications": []
+  },
+  "scoreResults": {
+    "score": 85,
+    "feedback": ["Strength 1", "Strength 2"],
+    "suggestions": ["Improvement 1", "Improvement 2"]
+  }
 }
-If any field is missing, leave it blank or empty array.
-`;
+Return ONLY the JSON object.`;
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Parse this resume text:\n\n${extractedText}` },
+        { role: 'user', content: `Analyze this resume:\n\n${extractedText}` },
       ],
+      response_format: { type: 'json_object' }
     });
 
     const rsString = completion.choices[0]?.message?.content || '{}';
-    const parsedData = extractJSON(rsString);
-
-    // 2. Score it
-    const scoreResult = await calculateResumeScore(parsedData);
+    const combinedData = JSON.parse(rsString);
     
     return NextResponse.json({ 
-       score: scoreResult.score,
-       feedback: scoreResult.feedback,
-       suggestions: scoreResult.suggestions,
-       parsedData: parsedData
+       score: combinedData.scoreResults?.score || 70,
+       feedback: combinedData.scoreResults?.feedback || [],
+       suggestions: combinedData.scoreResults?.suggestions || [],
+       parsedData: combinedData.parsedData
     });
 
   } catch (err: any) {
