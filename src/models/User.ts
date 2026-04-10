@@ -6,6 +6,15 @@ export interface IUser extends Document {
   email: string;
   password: string;
   avatar?: string;
+  degree?: string;
+  bio?: string;
+  skills?: string[];
+  links?: {
+    linkedin?: string;
+    github?: string;
+    resume?: string;
+    portfolio?: string;
+  };
   createdAt: Date;
   comparePassword(candidate: string): Promise<boolean>;
 }
@@ -16,6 +25,15 @@ const UserSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, minlength: 6 },
     avatar: { type: String },
+    degree: { type: String },
+    bio: { type: String },
+    skills: [{ type: String }],
+    links: {
+      linkedin: { type: String },
+      github: { type: String },
+      resume: { type: String },
+      portfolio: { type: String },
+    },
   },
   { timestamps: true }
 );

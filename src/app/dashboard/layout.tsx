@@ -3,12 +3,17 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import AIChatbot from '@/components/AIChatbot';
 
 const navItems = [
   { href: '/dashboard', icon: '🏠', label: 'Dashboard', exact: true },
   { href: '/dashboard/resume', icon: '📄', label: 'Resume Builder', exact: false },
+  { href: '/dashboard/score-resume', icon: '✨', label: 'Score & Improve', exact: false },
   { href: '/dashboard/portfolio', icon: '🎨', label: 'Portfolio', exact: false },
+  { href: '/dashboard/projects', icon: '🚀', label: 'Project Ideas', exact: false },
   { href: '/dashboard/jobs', icon: '🤖', label: 'AI Job Match', exact: false },
+  { href: '/dashboard/interview', icon: '🎤', label: 'Mock Interview', exact: false },
+  { href: '/dashboard/cover-letter', icon: '✉️', label: 'Cover Letter', exact: false },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -18,6 +23,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
+  // Shared context for AI chatbot — pulled from localStorage snapshots
+  const [chatContext, setChatContext] = useState<{
+    resumeData?: any;
+    skills?: string[];
+    jobSuggestions?: any[];
+    portfolioStatus?: string;
+  }>({});
+
   useEffect(() => {
     if (!loading && !user) router.push('/login');
   }, [user, loading, router]);
@@ -25,6 +38,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  // Load cached context from localStorage for the chatbot
+  useEffect(() => {
+    try {
+      const resumeRaw = localStorage.getItem('s2j_resume_snapshot');
+      const jobsRaw = localStorage.getItem('s2j_jobs_snapshot');
+      const portfolioRaw = localStorage.getItem('s2j_portfolio_snapshot');
+
+      const resumeData = resumeRaw ? JSON.parse(resumeRaw) : undefined;
+      const skills = resumeData?.skills || [];
+      const jobSuggestions = jobsRaw ? JSON.parse(jobsRaw) : undefined;
+      const portfolioStatus = portfolioRaw || undefined;
+
+      setChatContext({ resumeData, skills, jobSuggestions, portfolioStatus });
+    } catch {
+      // Ignore parse errors
+    }
+  }, [pathname]); // Refresh on navigation
 
   if (loading || !user) {
     return (
@@ -79,8 +110,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Navigation */}
         <nav className="sidebar-nav">
-          <p className="nav-section-label">MAIN MENU</p>
-          {navItems.map(item => (
+          <p className="nav-section-label">CAREER PIPELINE</p>
+          {navItems.map((item, idx) => (
             <Link
               key={item.href}
               href={item.href}
@@ -89,11 +120,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               <span className="nav-icon">{item.icon}</span>
               <span>{item.label}</span>
+              <span style={{ marginLeft: 'auto', fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                {idx === 0 ? '' : `STEP ${idx}`}
+              </span>
               {isActive(item.href, item.exact) && (
                 <span className="nav-active-dot" />
               )}
             </Link>
           ))}
+
+          <div className="divider" style={{ margin: '8px 8px' }} />
+          <p className="nav-section-label">AI TOOLS</p>
+          <button
+            className="sidebar-nav-item"
+            onClick={() => {
+              // Trigger chatbot open via custom event
+              window.dispatchEvent(new CustomEvent('open-chatbot'));
+              setSidebarOpen(false);
+            }}
+            style={{ width: '100%', textAlign: 'left' }}
+          >
+            <span className="nav-icon">💬</span>
+            <span>Career Assistant</span>
+            <span style={{ marginLeft: 'auto', fontSize: '10px', background: 'rgba(108,99,255,0.15)', color: 'var(--accent-primary)', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>AI</span>
+          </button>
         </nav>
 
         {/* Bottom Actions */}
@@ -130,6 +180,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="topbar-title">
             {navItems.find(item => isActive(item.href, item.exact))?.label || 'Dashboard'}
           </div>
+          {/* Career Pipeline Steps */}
+          <div className="pipeline-steps">
+            {navItems.map((item, i) => (
+              <Link key={item.href} href={item.href} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{
+                  width: '26px',
+                  height: '26px',
+                  borderRadius: '50%',
+                  background: isActive(item.href, item.exact) ? 'var(--gradient-primary)' : 'var(--surface)',
+                  border: `2px solid ${isActive(item.href, item.exact) ? 'var(--accent-primary)' : 'var(--border)'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: isActive(item.href, item.exact) ? '#fff' : 'var(--text-muted)',
+                  transition: 'all 0.2s',
+                  flexShrink: 0,
+                }}>
+                  {i + 1}
+                </div>
+                {i < navItems.length - 1 && (
+                  <div style={{ width: '20px', height: '1px', background: 'var(--border)' }} />
+                )}
+              </Link>
+            ))}
+          </div>
           <div className="topbar-right">
             <div className="user-avatar-sm">{user.name.charAt(0).toUpperCase()}</div>
           </div>
@@ -140,6 +217,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
+
+      {/* AI Chatbot — always present */}
+      <AIChatbot context={chatContext} />
 
       <style jsx>{`
         .dashboard-root { display: flex; min-height: 100vh; }
@@ -159,11 +239,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .topbar { height: 60px; border-bottom: 1px solid var(--border); background: var(--bg-card); display: flex; align-items: center; padding: 0 24px; gap: 16px; position: sticky; top: 0; z-index: 10; }
         .topbar-title { font-size: 16px; font-weight: 600; color: var(--text-primary); flex: 1; }
         .topbar-right { display: flex; align-items: center; gap: 12px; }
+        .pipeline-steps { display: flex; align-items: center; gap: 2px; }
         .user-avatar-sm { width: 32px; height: 32px; background: var(--gradient-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; }
         .mobile-menu-btn { display: none; font-size: 20px; }
         .page-content { padding: 28px; }
         @media (max-width: 768px) {
           .mobile-menu-btn { display: flex; }
+          .pipeline-steps { display: none; }
           .page-content { padding: 16px; }
         }
       `}</style>

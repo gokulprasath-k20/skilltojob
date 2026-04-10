@@ -174,4 +174,93 @@ export async function extractTextFromImage(base64Image: string, mimeType: string
   }
 }
 
+// Generate Mock Interview Questions
+export async function generateInterviewQuestions(role: string, skills: string[]): Promise<string[]> {
+  const systemPrompt = `You are a technical interviewer for a ${role} position.
+Based on the candidate's skills, generate 4 challenging but fair interview questions (mix of technical and behavioral).
+Return ONLY valid JSON array of strings:
+["question 1", "question 2", "question 3", "question 4"]`;
+
+  const prompt = `Role: ${role}\nSkills: ${skills.join(', ')}`;
+  
+  const result = await aiComplete(prompt, systemPrompt);
+  try {
+    const cleaned = result.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    return JSON.parse(cleaned);
+  } catch {
+    return [
+      `Could you describe your experience as a ${role}?`,
+      `What is the most challenging technical problem you have solved?`,
+      `How do you keep up with the latest trends?`,
+      `Describe a time you disagreed with a coworker and how you handled it.`
+    ];
+  }
+}
+
+// Evaluate Interview Answer
+export async function evaluateInterviewAnswer(role: string, question: string, answer: string): Promise<{score: number, feedback: string, strengths: string[], improvements: string[]}> {
+  const systemPrompt = `You are an expert technical interviewer evaluating an answer for a ${role} position.
+Rate the answer out of 100, provide constructive feedback, and list strengths and improvements.
+Return ONLY valid JSON:
+{
+  "score": 85,
+  "feedback": "A solid response that addresses the core of the problem, but lacks some detail on edge cases.",
+  "strengths": ["Clear communication", "Good technical understanding"],
+  "improvements": ["Could mention specific metrics", "Missed error handling"]
+}`;
+
+  const prompt = `Question: ${question}\nCandidate Answer: ${answer}`;
+  
+  const result = await aiComplete(prompt, systemPrompt);
+  try {
+    const cleaned = result.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    return JSON.parse(cleaned);
+  } catch {
+    return {
+      score: 70,
+      feedback: "Good attempt, but could use more specific examples.",
+      strengths: ["Clear response"],
+      improvements: ["Add more technical depth"]
+    };
+  }
+}
+
+// Generate Cover Letter
+export async function generateCoverLetter(resumeData: any, jobTitle: string, companyName: string): Promise<string> {
+  const systemPrompt = `You are an expert career coach writing a professional cover letter.
+Using the candidate's resume data, write a compelling, concise cover letter for the ${jobTitle} role at ${companyName}.
+Do NOT use placeholders like [Your Name] unless data is missing. Use actual data.
+Keep it strictly under 300 words. Format cleanly with paragraphs.`;
+
+  const prompt = `Resume Data: ${JSON.stringify(resumeData)}`;
+  
+  return aiComplete(prompt, systemPrompt);
+}
+
+// Suggest Projects
+export async function suggestProjects(requirement: string): Promise<Array<{title: string, description: string, learningOutcomes: string[]}>> {
+  const systemPrompt = `You are a senior software engineer mentoring a junior.
+Based on their specific requirement, suggest 3 highly practical, impressive projects they should build for their portfolio.
+Return ONLY valid JSON:
+[
+  {
+    "title": "Project Name",
+    "description": "Brief description of the project and its core features.",
+    "learningOutcomes": ["Skill 1 learned", "Skill 2 applied"]
+  }
+]`;
+
+  const result = await aiComplete(`Requirement: ${requirement}`, systemPrompt);
+  try {
+    const cleaned = result.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    return JSON.parse(cleaned);
+  } catch {
+    return [
+      { title: "Task Manager Dashboard", description: "A Kanban style task manager.", learningOutcomes: ["State Management", "Drag and Drop"] },
+      { title: "E-Commerce Store", description: "Online store with cart and checkout.", learningOutcomes: ["Payment Integration", "Context API"] },
+      { title: "Weather App", description: "Live weather dashboard using public APIs.", learningOutcomes: ["Data Fetching", "Async/Await"] }
+    ];
+  }
+}
+
 export { openai, groq };

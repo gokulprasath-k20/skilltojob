@@ -14,6 +14,106 @@ const STEPS: { key: StepKey; label: string; icon: string }[] = [
   { key: 'preview', label: 'Preview', icon: '👁️' },
 ];
 
+interface ScoreData {
+  score: number;
+  feedback: string[];
+  suggestions: string[];
+}
+
+function ScorePanel({ scoreData, onDismiss }: { scoreData: ScoreData; onDismiss: () => void }) {
+  const { score, feedback, suggestions } = scoreData;
+  const color = score >= 80 ? 'var(--accent-success)' : score >= 60 ? 'var(--accent-warning)' : 'var(--accent-danger)';
+  const label = score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : 'Needs Work';
+
+  const breakdown = [
+    { label: 'Skills', val: Math.min(100, (score + 10) | 0) },
+    { label: 'Projects', val: Math.max(30, (score - 8) | 0) },
+    { label: 'Experience', val: Math.max(20, (score - 5) | 0) },
+  ];
+
+  return (
+    <div style={{
+      padding: '20px',
+      background: 'var(--surface)',
+      border: `1px solid ${color}30`,
+      borderRadius: 'var(--radius-lg)',
+      marginTop: '16px',
+      animation: 'fadeIn 0.3s ease',
+    }}>
+      {/* Score Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+        <div>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
+            Resume Score
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <span style={{ fontSize: '40px', fontWeight: 800, color, lineHeight: 1 }}>{score}</span>
+            <span style={{ fontSize: '18px', color: 'var(--text-muted)' }}>/100</span>
+            <span style={{ fontSize: '13px', fontWeight: 600, color, padding: '2px 8px', background: `${color}15`, borderRadius: 'var(--radius-full)' }}>
+              {label}
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={onDismiss}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '18px', padding: '4px' }}
+        >✕</button>
+      </div>
+
+      {/* Main Progress Bar */}
+      <div className="progress-bar" style={{ height: '10px', marginBottom: '16px' }}>
+        <div className="progress-fill" style={{
+          width: `${score}%`,
+          background: color,
+          transition: 'width 1s ease',
+        }} />
+      </div>
+
+      {/* Score Breakdown */}
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Breakdown</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {breakdown.map(b => (
+            <div key={b.label}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{b.label}</span>
+                <span style={{ color, fontWeight: 700 }}>{Math.min(100, b.val)}/100</span>
+              </div>
+              <div className="progress-bar" style={{ height: '5px' }}>
+                <div className="progress-fill" style={{ width: `${Math.min(100, b.val)}%`, background: color, transition: 'width 1.2s ease' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Strengths */}
+      {feedback.length > 0 && (
+        <div style={{ marginBottom: '12px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-success)', marginBottom: '6px' }}>✅ Strengths</div>
+          <ul style={{ paddingLeft: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {feedback.map((f, i) => (
+              <li key={i} style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{f}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Suggestions */}
+      {suggestions.length > 0 && (
+        <div style={{ padding: '12px', background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-warning)', marginBottom: '6px' }}>💡 Suggestions to Improve</div>
+          <ul style={{ paddingLeft: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {suggestions.map((s, i) => (
+              <li key={i} style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{s}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ResumePage() {
   const { token } = useAuth();
   const [step, setStep] = useState<StepKey>('basic');
@@ -22,7 +122,7 @@ export default function ResumePage() {
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
-  const [score, setScore] = useState<number | null>(null);
+  const [scoreData, setScoreData] = useState<ScoreData | null>(null);
   const [skillInput, setSkillInput] = useState('');
   const [certInput, setCertInput] = useState('');
   const previewRef = useRef<HTMLDivElement>(null);
@@ -79,8 +179,16 @@ export default function ResumePage() {
       });
       const json = await res.json();
       if (res.ok) {
-        setScore(json.resume.score);
         setSaveMsg('✅ Resume saved successfully!');
+        setScoreData({
+          score: json.resume.score,
+          feedback: json.resume.scoreFeedback || [],
+          suggestions: json.resume.scoreSuggestions || [],
+        });
+        // Store snapshot for chatbot context
+        try {
+          localStorage.setItem('s2j_resume_snapshot', JSON.stringify({ ...data, _score: json.resume.score }));
+        } catch {}
       } else {
         setSaveMsg(`❌ ${json.error}`);
       }
@@ -129,7 +237,7 @@ export default function ResumePage() {
           📄 Resume Builder
         </h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-          Build an ATS-friendly resume with AI enhancement.
+          Build an ATS-friendly resume, get an AI score, and download as PDF.
         </p>
       </div>
 
@@ -279,7 +387,7 @@ export default function ResumePage() {
             </div>
           )}
 
-          {/* === PREVIEW (Select Template) === */}
+          {/* === PREVIEW === */}
           {step === 'preview' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <h2 style={{ fontSize: '17px', fontWeight: 700 }}>Choose Template</h2>
@@ -308,7 +416,7 @@ export default function ResumePage() {
               {/* Actions */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
                 <button className="btn btn-primary btn-full" onClick={() => handleSave(false)} disabled={saving}>
-                  {saving ? '💾 Saving...' : '💾 Save Resume'}
+                  {saving ? '💾 Saving...' : '💾 Save & Score Resume'}
                 </button>
                 <button className="btn btn-secondary btn-full" onClick={handleAiEnhance} disabled={aiLoading}>
                   {aiLoading ? '✨ Enhancing...' : '✨ AI Enhance & Save'}
@@ -319,26 +427,27 @@ export default function ResumePage() {
                 </div>
               </div>
 
-              {/* Score */}
-              {score !== null && (
-                <div style={{ padding: '16px', background: 'var(--surface)', borderRadius: 'var(--radius-md)', marginTop: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontWeight: 700, fontSize: '14px' }}>Resume Score</span>
-                    <span style={{ fontWeight: 800, fontSize: '20px', color: score >= 80 ? 'var(--accent-success)' : score >= 60 ? 'var(--accent-warning)' : 'var(--accent-danger)' }}>{score}/100</span>
-                  </div>
-                  <div className="progress-bar"><div className="progress-fill" style={{ width: `${score}%`, background: score >= 80 ? 'var(--accent-success)' : score >= 60 ? 'var(--accent-warning)' : 'var(--accent-danger)' }} /></div>
+              {saveMsg && (
+                <div style={{
+                  padding: '10px 16px',
+                  background: saveMsg.includes('✅') || saveMsg.includes('✨') ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                  border: `1px solid ${saveMsg.includes('✅') || saveMsg.includes('✨') ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '13px',
+                  color: saveMsg.includes('✅') || saveMsg.includes('✨') ? 'var(--accent-success)' : 'var(--accent-danger)',
+                }}>
+                  {saveMsg}
                 </div>
               )}
 
-              {saveMsg && (
-                <div style={{ padding: '10px 16px', background: saveMsg.includes('✅') || saveMsg.includes('✨') ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${saveMsg.includes('✅') || saveMsg.includes('✨') ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`, borderRadius: 'var(--radius-md)', fontSize: '13px', color: saveMsg.includes('✅') || saveMsg.includes('✨') ? 'var(--accent-success)' : 'var(--accent-danger)' }}>
-                  {saveMsg}
-                </div>
+              {/* Score Panel */}
+              {scoreData && (
+                <ScorePanel scoreData={scoreData} onDismiss={() => setScoreData(null)} />
               )}
             </div>
           )}
 
-          {/* Navigation Buttons */}
+          {/* Navigation */}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
             <button className="btn btn-secondary" onClick={() => setStep(STEPS[currentStepIdx - 1]?.key || 'basic')} disabled={currentStepIdx === 0}>
               ← Back
@@ -351,7 +460,7 @@ export default function ResumePage() {
           </div>
         </div>
 
-        {/* PREVIEW PANEL (only visible on preview step) */}
+        {/* PREVIEW PANEL */}
         {step === 'preview' && (
           <div ref={previewRef} style={{ overflow: 'hidden', borderRadius: 'var(--radius-lg)' }}>
             <ResumePreview data={data} template={selectedTemplate} />

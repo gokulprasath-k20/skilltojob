@@ -406,6 +406,23 @@ body {
 .glow-purple { box-shadow: 0 0 30px rgba(168, 85, 247, 0.2); }
 .glow-cyan { box-shadow: 0 0 30px rgba(6, 182, 212, 0.2); }
 
+/* ==================== PIPELINE CARD ==================== */
+.pipeline-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ==================== CHATBOT OPEN ANIMATION ==================== */
+@keyframes slideUpChat {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50%       { opacity: 1;   transform: scale(1); }
+}
+
 /* ==================== SIDEBAR ==================== */
 .sidebar {
   width: 260px;
@@ -488,3 +505,9 @@ body {
 .absolute { position: absolute; }
 .hidden { display: none; }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Responsive grid helpers */
+@media (max-width: 640px) {
+  .grid-2col { grid-template-columns: 1fr !important; }
+  .hide-mobile { display: none !important; }
+}

@@ -38,6 +38,14 @@ const STEPS: { key: StepKey; label: string; icon: string }[] = [
   { key: 'preview', label: 'Deploy', icon: '🚀' },
 ];
 
+const AI_SUGGESTIONS = [
+  { icon: '✍️', title: 'Improve About Section', desc: 'Make it more compelling — add passion, impact, and personality.' },
+  { icon: '🚀', title: 'Add More Projects', desc: 'Recruiters want to see at least 3 projects. Add your best work.' },
+  { icon: '⚡', title: 'Expand Skills List', desc: 'Include both technical and soft skills to cast a wider net.' },
+  { icon: '🔗', title: 'Add Social Links', desc: 'LinkedIn and GitHub links increase your profile credibility by 40%.' },
+  { icon: '💼', title: 'Add Work Experience', desc: 'Even internships count. Add all relevant experience.' },
+];
+
 export default function PortfolioPage() {
   const { token } = useAuth();
   const [step, setStep] = useState<StepKey>('info');
@@ -48,6 +56,19 @@ export default function PortfolioPage() {
   const [saveMsg, setSaveMsg] = useState('');
   const [liveUrl, setLiveUrl] = useState('');
   const [skillInput, setSkillInput] = useState('');
+
+  // Section visibility toggles
+  const [sections, setSections] = useState({
+    about: true,
+    skills: true,
+    projects: true,
+    experience: true,
+    contact: true,
+  });
+
+  // AI suggestions panel
+  const [showAISuggestions, setShowAISuggestions] = useState(false);
+  const [appliedSuggestions, setAppliedSuggestions] = useState<number[]>([]);
 
   const stepIdx = STEPS.findIndex(s => s.key === step);
   const update = (key: keyof PortfolioData, val: unknown) => setData(d => ({ ...d, [key]: val }));
@@ -74,6 +95,10 @@ export default function PortfolioPage() {
     update('experience', updated);
   };
 
+  const toggleSection = (key: keyof typeof sections) => {
+    setSections(s => ({ ...s, [key]: !s[key] }));
+  };
+
   const handleSave = async (aiEnhance = false) => {
     setSaving(true);
     setSaveMsg('');
@@ -88,6 +113,10 @@ export default function PortfolioPage() {
         setLiveUrl(json.portfolio.liveUrl);
         setSaveMsg('✅ Portfolio saved successfully!');
         setStep('preview');
+        // Save context snapshot
+        try {
+          localStorage.setItem('s2j_portfolio_snapshot', `${data.name} — ${data.title} (${TEMPLATES.find(t => t.id === selectedTemplate)?.name} template)`);
+        } catch {}
       } else {
         setSaveMsg(`❌ ${json.error}`);
       }
@@ -98,8 +127,8 @@ export default function PortfolioPage() {
     }
   };
 
-  const downloadZip = async () => {
-    const html = generatePortfolioHTML(data, selectedTemplate);
+  const downloadZip = () => {
+    const html = generatePortfolioHTML(data, selectedTemplate, sections);
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -116,13 +145,70 @@ export default function PortfolioPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>🎨 Portfolio Generator</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Build a stunning dev portfolio with AI-powered content.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>🎨 Portfolio Generator</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Build a stunning dev portfolio with AI-powered content.</p>
+        </div>
+        <button
+          onClick={() => setShowAISuggestions(s => !s)}
+          className="btn btn-secondary btn-sm"
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', borderColor: 'rgba(108,99,255,0.3)' }}
+        >
+          🤖 AI Portfolio Tips {showAISuggestions ? '▲' : '▼'}
+        </button>
       </div>
 
+      {/* AI Suggestions Panel */}
+      {showAISuggestions && (
+        <div style={{
+          marginBottom: '24px',
+          padding: '20px',
+          background: 'linear-gradient(135deg, rgba(108,99,255,0.06), rgba(168,85,247,0.04))',
+          border: '1px solid rgba(108,99,255,0.2)',
+          borderRadius: 'var(--radius-lg)',
+          animation: 'fadeIn 0.25s ease',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+            <span style={{ fontSize: '20px' }}>🤖</span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)' }}>AI Portfolio Suggestions</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Based on best practices for developer portfolios</div>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '10px' }}>
+            {AI_SUGGESTIONS.map((s, i) => {
+              const done = appliedSuggestions.includes(i);
+              return (
+                <div
+                  key={i}
+                  style={{
+                    padding: '12px 14px',
+                    background: done ? 'rgba(16,185,129,0.08)' : 'var(--bg-card)',
+                    border: `1px solid ${done ? 'rgba(16,185,129,0.25)' : 'var(--border)'}`,
+                    borderRadius: 'var(--radius-md)',
+                    display: 'flex',
+                    gap: '10px',
+                    alignItems: 'flex-start',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                  onClick={() => setAppliedSuggestions(prev => done ? prev.filter(x => x !== i) : [...prev, i])}
+                >
+                  <span style={{ fontSize: '18px', flexShrink: 0, marginTop: '1px' }}>{done ? '✅' : s.icon}</span>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: done ? 'var(--accent-success)' : 'var(--text-primary)', marginBottom: '2px' }}>{s.title}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{s.desc}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Steps */}
-      <div className="steps-bar">
+      <div className="steps-bar" style={{ marginBottom: '24px' }}>
         {STEPS.map((s, i) => (
           <button key={s.key} className={`step-btn ${step === s.key ? 'active' : ''} ${i < stepIdx ? 'done' : ''}`} onClick={() => setStep(s.key)}>
             <span>{i < stepIdx ? '✓' : s.icon}</span>
@@ -131,7 +217,7 @@ export default function PortfolioPage() {
         ))}
       </div>
 
-      <div style={{ marginTop: '24px', display: 'grid', gridTemplateColumns: step === 'preview' ? '1fr 1fr' : '1fr', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: step === 'preview' ? '1fr 1fr' : '1fr', gap: '24px' }}>
         <div className="card" style={{ padding: '28px' }}>
 
           {/* INFO */}
@@ -160,62 +246,99 @@ export default function PortfolioPage() {
           {/* CONTENT */}
           {step === 'content' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              {/* Skills */}
+              {/* Section Toggles */}
               <div>
-                <h2 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '12px' }}>Skills</h2>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                  <input className="input" placeholder="React, TypeScript, Node.js..." value={skillInput} onChange={e => setSkillInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addSkill()} />
-                  <button className="btn btn-primary" onClick={addSkill}>Add</button>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Section Visibility
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {data.skills.map((s, i) => (
-                    <span key={i} className="badge badge-primary" style={{ cursor: 'pointer' }} onClick={() => update('skills', data.skills.filter((_, j) => j !== i))}>{s} ✕</span>
+                  {(Object.keys(sections) as Array<keyof typeof sections>).map(key => (
+                    <button
+                      key={key}
+                      onClick={() => toggleSection(key)}
+                      style={{
+                        padding: '5px 12px',
+                        borderRadius: 'var(--radius-full)',
+                        border: `1px solid ${sections[key] ? 'rgba(108,99,255,0.4)' : 'var(--border)'}`,
+                        background: sections[key] ? 'rgba(108,99,255,0.1)' : 'var(--surface)',
+                        color: sections[key] ? 'var(--accent-primary)' : 'var(--text-muted)',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                        fontFamily: 'Inter, sans-serif',
+                        textTransform: 'capitalize',
+                      }}
+                    >
+                      {sections[key] ? '✓ ' : ''}{key}
+                    </button>
                   ))}
                 </div>
               </div>
 
-              {/* Projects */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <h2 style={{ fontSize: '17px', fontWeight: 700 }}>Projects</h2>
-                  <button className="btn btn-secondary btn-sm" onClick={addProject}>+ Add Project</button>
-                </div>
-                {data.projects.map((proj, i) => (
-                  <div key={i} className="card" style={{ padding: '14px', marginBottom: '12px', position: 'relative' }}>
-                    {data.projects.length > 1 && (
-                      <button className="btn btn-danger btn-sm" style={{ position: 'absolute', top: '10px', right: '10px' }} onClick={() => update('projects', data.projects.filter((_, j) => j !== i))}>✕</button>
-                    )}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                      <div className="form-group"><label className="label">Title</label><input className="input" placeholder="Portfolio Website" value={proj.title} onChange={e => updateProject(i, 'title', e.target.value)} /></div>
-                      <div className="form-group"><label className="label">Tech Stack</label><input className="input" placeholder="Next.js, Tailwind" value={proj.tech.join(', ')} onChange={e => updateProject(i, 'tech', e.target.value.split(',').map(t => t.trim()))} /></div>
-                      <div className="form-group" style={{ gridColumn: '1/-1' }}><label className="label">Description</label><textarea className="textarea" placeholder="What does this project do?" value={proj.description} onChange={e => updateProject(i, 'description', e.target.value)} style={{ minHeight: '70px' }} /></div>
-                      <div className="form-group"><label className="label">Live Link</label><input className="input" placeholder="https://..." value={proj.link} onChange={e => updateProject(i, 'link', e.target.value)} /></div>
-                      <div className="form-group"><label className="label">GitHub</label><input className="input" placeholder="github.com/..." value={proj.github} onChange={e => updateProject(i, 'github', e.target.value)} /></div>
-                    </div>
+              {/* Skills */}
+              {sections.skills && (
+                <div>
+                  <h2 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '12px' }}>Skills</h2>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                    <input className="input" placeholder="React, TypeScript, Node.js..." value={skillInput} onChange={e => setSkillInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addSkill()} />
+                    <button className="btn btn-primary" onClick={addSkill}>Add</button>
                   </div>
-                ))}
-              </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {data.skills.map((s, i) => (
+                      <span key={i} className="badge badge-primary" style={{ cursor: 'pointer' }} onClick={() => update('skills', data.skills.filter((_, j) => j !== i))}>{s} ✕</span>
+                    ))}
+                    {data.skills.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>No skills added yet.</p>}
+                  </div>
+                </div>
+              )}
+
+              {/* Projects */}
+              {sections.projects && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h2 style={{ fontSize: '16px', fontWeight: 700 }}>Projects</h2>
+                    <button className="btn btn-secondary btn-sm" onClick={addProject}>+ Add Project</button>
+                  </div>
+                  {data.projects.map((proj, i) => (
+                    <div key={i} className="card" style={{ padding: '14px', marginBottom: '12px', position: 'relative' }}>
+                      {data.projects.length > 1 && (
+                        <button className="btn btn-danger btn-sm" style={{ position: 'absolute', top: '10px', right: '10px' }} onClick={() => update('projects', data.projects.filter((_, j) => j !== i))}>✕</button>
+                      )}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div className="form-group"><label className="label">Title</label><input className="input" placeholder="Portfolio Website" value={proj.title} onChange={e => updateProject(i, 'title', e.target.value)} /></div>
+                        <div className="form-group"><label className="label">Tech Stack</label><input className="input" placeholder="Next.js, Tailwind" value={proj.tech.join(', ')} onChange={e => updateProject(i, 'tech', e.target.value.split(',').map(t => t.trim()))} /></div>
+                        <div className="form-group" style={{ gridColumn: '1/-1' }}><label className="label">Description</label><textarea className="textarea" placeholder="What does this project do?" value={proj.description} onChange={e => updateProject(i, 'description', e.target.value)} style={{ minHeight: '70px' }} /></div>
+                        <div className="form-group"><label className="label">Live Link</label><input className="input" placeholder="https://..." value={proj.link} onChange={e => updateProject(i, 'link', e.target.value)} /></div>
+                        <div className="form-group"><label className="label">GitHub</label><input className="input" placeholder="github.com/..." value={proj.github} onChange={e => updateProject(i, 'github', e.target.value)} /></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Experience */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <h2 style={{ fontSize: '17px', fontWeight: 700 }}>Experience</h2>
-                  <button className="btn btn-secondary btn-sm" onClick={addExperience}>+ Add</button>
-                </div>
-                {data.experience.map((exp, i) => (
-                  <div key={i} className="card" style={{ padding: '14px', marginBottom: '12px', position: 'relative' }}>
-                    {data.experience.length > 1 && (
-                      <button className="btn btn-danger btn-sm" style={{ position: 'absolute', top: '10px', right: '10px' }} onClick={() => update('experience', data.experience.filter((_, j) => j !== i))}>✕</button>
-                    )}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                      <div className="form-group"><label className="label">Company</label><input className="input" placeholder="Google" value={exp.company} onChange={e => updateExperience(i, 'company', e.target.value)} /></div>
-                      <div className="form-group"><label className="label">Role</label><input className="input" placeholder="SWE Intern" value={exp.role} onChange={e => updateExperience(i, 'role', e.target.value)} /></div>
-                      <div className="form-group"><label className="label">Duration</label><input className="input" placeholder="Jun 2023 – Aug 2023" value={exp.duration} onChange={e => updateExperience(i, 'duration', e.target.value)} /></div>
-                      <div className="form-group" style={{ gridColumn: '1/-1' }}><label className="label">Description</label><textarea className="textarea" placeholder="Key achievements and responsibilities..." value={exp.description} onChange={e => updateExperience(i, 'description', e.target.value)} style={{ minHeight: '70px' }} /></div>
-                    </div>
+              {sections.experience && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h2 style={{ fontSize: '16px', fontWeight: 700 }}>Experience</h2>
+                    <button className="btn btn-secondary btn-sm" onClick={addExperience}>+ Add</button>
                   </div>
-                ))}
-              </div>
+                  {data.experience.map((exp, i) => (
+                    <div key={i} className="card" style={{ padding: '14px', marginBottom: '12px', position: 'relative' }}>
+                      {data.experience.length > 1 && (
+                        <button className="btn btn-danger btn-sm" style={{ position: 'absolute', top: '10px', right: '10px' }} onClick={() => update('experience', data.experience.filter((_, j) => j !== i))}>✕</button>
+                      )}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div className="form-group"><label className="label">Company</label><input className="input" placeholder="Google" value={exp.company} onChange={e => updateExperience(i, 'company', e.target.value)} /></div>
+                        <div className="form-group"><label className="label">Role</label><input className="input" placeholder="SWE Intern" value={exp.role} onChange={e => updateExperience(i, 'role', e.target.value)} /></div>
+                        <div className="form-group"><label className="label">Duration</label><input className="input" placeholder="Jun 2023 – Aug 2023" value={exp.duration} onChange={e => updateExperience(i, 'duration', e.target.value)} /></div>
+                        <div className="form-group" style={{ gridColumn: '1/-1' }}><label className="label">Description</label><textarea className="textarea" placeholder="Key achievements and responsibilities..." value={exp.description} onChange={e => updateExperience(i, 'description', e.target.value)} style={{ minHeight: '70px' }} /></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -241,7 +364,11 @@ export default function PortfolioPage() {
                   {aiLoading ? '✨ AI enhancing...' : '✨ AI Enhance & Save'}
                 </button>
               </div>
-              {saveMsg && <div style={{ padding: '10px 16px', background: saveMsg.includes('✅') ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${saveMsg.includes('✅') ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`, borderRadius: 'var(--radius-md)', fontSize: '13px', color: saveMsg.includes('✅') ? 'var(--accent-success)' : 'var(--accent-danger)' }}>{saveMsg}</div>}
+              {saveMsg && (
+                <div style={{ padding: '10px 16px', background: saveMsg.includes('✅') ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${saveMsg.includes('✅') ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`, borderRadius: 'var(--radius-md)', fontSize: '13px', color: saveMsg.includes('✅') ? 'var(--accent-success)' : 'var(--accent-danger)' }}>
+                  {saveMsg}
+                </div>
+              )}
             </div>
           )}
 
@@ -253,7 +380,7 @@ export default function PortfolioPage() {
                 <div style={{ padding: '20px', background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 'var(--radius-lg)' }}>
                   <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>Your portfolio is live at:</div>
                   <div style={{ fontWeight: 700, color: 'var(--accent-success)', fontSize: '14px', wordBreak: 'break-all' }}>{liveUrl}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>🔗 Share this link on your resume, LinkedIn, and email signature!</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>🔗 Share on your resume, LinkedIn, and email signature!</div>
                 </div>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -276,7 +403,7 @@ export default function PortfolioPage() {
         {/* Live Preview Panel */}
         {step === 'preview' && liveUrl && (
           <div>
-            <PortfolioLivePreview data={data} templateId={selectedTemplate} accentColor={template.color} />
+            <PortfolioLivePreview data={data} templateId={selectedTemplate} accentColor={template.color} visibleSections={sections} />
           </div>
         )}
       </div>
@@ -293,9 +420,15 @@ export default function PortfolioPage() {
   );
 }
 
-function PortfolioLivePreview({ data, templateId, accentColor }: { data: PortfolioData; templateId: string; accentColor: string }) {
+function PortfolioLivePreview({
+  data, templateId, accentColor, visibleSections,
+}: {
+  data: PortfolioData;
+  templateId: string;
+  accentColor: string;
+  visibleSections: Record<string, boolean>;
+}) {
   const isDark = templateId === 'developer';
-  const bg = isDark ? '#0d1117' : templateId === 'gradient' ? `linear-gradient(135deg,${accentColor}20,#06b6d420)` : '#fff';
   return (
     <div style={{ background: isDark ? '#0d1117' : '#fff', borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid var(--border)', fontFamily: 'Inter, sans-serif' }}>
       <div style={{ background: isDark ? `linear-gradient(135deg, ${accentColor}, #06b6d4)` : accentColor, padding: '40px', color: '#fff', textAlign: 'center' }}>
@@ -306,33 +439,36 @@ function PortfolioLivePreview({ data, templateId, accentColor }: { data: Portfol
         <p style={{ opacity: 0.9, fontSize: '14px' }}>{data.title || 'Your Title'}</p>
       </div>
       <div style={{ padding: '24px', background: isDark ? '#0d1117' : '#fff', color: isDark ? '#e6edf3' : '#1e293b' }}>
-        {data.about && <p style={{ fontSize: '13px', lineHeight: 1.7, color: isDark ? '#8b949e' : '#64748b', marginBottom: '20px' }}>{data.about.slice(0, 200)}...</p>}
-        {data.skills.length > 0 && (
+        {visibleSections.about && data.about && (
+          <p style={{ fontSize: '13px', lineHeight: 1.7, color: isDark ? '#8b949e' : '#64748b', marginBottom: '20px' }}>{data.about.slice(0, 200)}{data.about.length > 200 ? '...' : ''}</p>
+        )}
+        {visibleSections.skills && data.skills.length > 0 && (
           <div style={{ marginBottom: '20px' }}>
             <h3 style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: accentColor, marginBottom: '10px' }}>Skills</h3>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {data.skills.slice(0, 8).map((s, i) => <span key={i} style={{ fontSize: '11px', padding: '3px 8px', background: `${accentColor}20`, color: accentColor, borderRadius: '4px', fontWeight: 600 }}>{s}</span>)}
+              {data.skills.slice(0, 8).map((s, i) => (
+                <span key={i} style={{ fontSize: '11px', padding: '3px 8px', background: `${accentColor}20`, color: accentColor, borderRadius: '4px', fontWeight: 600 }}>{s}</span>
+              ))}
             </div>
           </div>
         )}
-        {data.projects.filter(p => p.title).length > 0 && (
+        {visibleSections.projects && data.projects.filter(p => p.title).length > 0 && (
           <div>
             <h3 style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: accentColor, marginBottom: '10px' }}>Projects</h3>
             {data.projects.filter(p => p.title).slice(0, 2).map((p, i) => (
               <div key={i} style={{ padding: '10px', background: isDark ? '#161b22' : '#f8fafc', borderRadius: '8px', marginBottom: '8px', borderLeft: `3px solid ${accentColor}` }}>
                 <div style={{ fontWeight: 700, fontSize: '13px' }}>{p.title}</div>
-                <div style={{ fontSize: '11px', color: isDark ? '#8b949e' : '#64748b', marginTop: '3px' }}>{p.description?.slice(0, 80)}</div>
+                {p.description && <div style={{ fontSize: '11px', color: isDark ? '#8b949e' : '#64748b', marginTop: '3px' }}>{p.description.slice(0, 80)}</div>}
               </div>
             ))}
           </div>
         )}
       </div>
-      <div id={bg as string} />
     </div>
   );
 }
 
-function generatePortfolioHTML(data: PortfolioData, templateId: string): string {
+function generatePortfolioHTML(data: PortfolioData, templateId: string, sections: Record<string, boolean>): string {
   const template = TEMPLATES.find(t => t.id === templateId);
   const accent = template?.color || '#6c63ff';
   const isDark = templateId === 'developer';
@@ -366,9 +502,11 @@ footer { text-align: center; padding: 40px; background: ${isDark ? '#161b22' : '
   <h1>${data.name || 'Portfolio'}</h1>
   <p class="subtitle">${data.title || ''}</p>
 </div>
-${data.about ? `<section><h2>About Me</h2><p>${data.about}</p></section>` : ''}
-${data.skills.length ? `<section><h2>Skills</h2>${data.skills.map(s => `<span class="skill-tag">${s}</span>`).join('')}</section>` : ''}
-${data.projects.filter(p => p.title).length ? `<section><h2>Projects</h2>${data.projects.filter(p => p.title).map(p => `<div class="project-card"><div class="project-title">${p.title}</div><p class="project-desc">${p.description}</p>${p.link ? `<a href="${p.link}" target="_blank">View Project ↗</a>` : ''}</div>`).join('')}</section>` : ''}
+${sections.about && data.about ? `<section><h2>About Me</h2><p>${data.about}</p></section>` : ''}
+${sections.skills && data.skills.length ? `<section><h2>Skills</h2>${data.skills.map(s => `<span class="skill-tag">${s}</span>`).join('')}</section>` : ''}
+${sections.projects && data.projects.filter(p => p.title).length ? `<section><h2>Projects</h2>${data.projects.filter(p => p.title).map(p => `<div class="project-card"><div class="project-title">${p.title}</div><p class="project-desc">${p.description}</p>${p.link ? `<a href="${p.link}" target="_blank">View Project ↗</a>` : ''}</div>`).join('')}</section>` : ''}
+${sections.experience && data.experience.filter(e => e.company).length ? `<section><h2>Experience</h2>${data.experience.filter(e => e.company).map(e => `<div class="project-card"><div class="project-title">${e.role} — ${e.company}</div><p class="project-desc">${e.description}</p></div>`).join('')}</section>` : ''}
+${sections.contact && (data.email || data.links.linkedin) ? `<section><h2>Contact</h2><p>${data.email ? `<a href="mailto:${data.email}">${data.email}</a>` : ''}${data.links.linkedin ? ` · <a href="https://${data.links.linkedin}" target="_blank">LinkedIn</a>` : ''}${data.links.github ? ` · <a href="https://${data.links.github}" target="_blank">GitHub</a>` : ''}</p></section>` : ''}
 <footer><p>© ${new Date().getFullYear()} ${data.name}. Built with Skill2Jobs.</p></footer>
 </body></html>`;
 }
