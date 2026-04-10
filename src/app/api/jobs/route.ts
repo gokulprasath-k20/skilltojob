@@ -205,9 +205,12 @@ export async function POST(req: NextRequest) {
     const cache = await JobCache.create({ userId: user.userId, resumeText, extractedData, jobs });
 
     return NextResponse.json({ extractedData, jobs, cacheId: cache._id });
-  } catch (err) {
+  } catch (err: any) {
     console.error('Jobs API error:', err);
-    return NextResponse.json({ error: 'Failed to process resume' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Failed to process resume', 
+      details: err?.message || 'Unknown server error' 
+    }, { status: 500 });
   }
 }
 

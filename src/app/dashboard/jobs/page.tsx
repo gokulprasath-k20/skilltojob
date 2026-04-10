@@ -61,7 +61,9 @@ export default function JobsPage() {
         throw new Error(`Server returned an invalid response (Status: ${res.status}). This could be a timeout or a server error.`);
       }
       
-      if (!res.ok) throw new Error(data?.error || 'Failed to analyze');
+      if (!res.ok) {
+        throw new Error(data?.details || data?.error || 'Failed to analyze');
+      }
       
       setExtractedData(data.extractedData);
       setJobs(data.jobs);
