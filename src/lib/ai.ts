@@ -20,17 +20,21 @@ export async function aiComplete(prompt: string, systemPrompt?: string): Promise
 
     return res.choices[0]?.message?.content || '';
   } catch {
-    // Fallback to OpenAI
-    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
-    if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
-    messages.push({ role: 'user', content: prompt });
+    try {
+      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
+      if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+      messages.push({ role: 'user', content: prompt });
 
-    const res = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages,
-      max_tokens: 2048,
-    });
-    return res.choices[0]?.message?.content || '';
+      const res = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages,
+        max_tokens: 2048,
+      });
+      return res.choices[0]?.message?.content || '';
+    } catch (openaiErr: any) {
+      console.error('Both AI providers failed:', openaiErr);
+      return ''; // Return empty so the caller can handle it gracefully
+    }
   }
 }
 
