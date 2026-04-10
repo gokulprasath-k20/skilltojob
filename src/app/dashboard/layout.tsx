@@ -182,40 +182,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           {/* Career Pipeline Steps */}
           <div className="pipeline-steps">
-            {navItems.map((item, i) => {
-              const active = isActive(item.href, item.exact);
-              return (
-                <Link 
-                  key={item.href} 
-                  href={item.href} 
-                  title={item.label}
-                  style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}
-                >
-                  <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '8px',
-                    background: active ? 'var(--gradient-primary)' : 'var(--surface)',
-                    border: `1px solid ${active ? 'var(--accent-primary)' : 'var(--border)'}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '12px',
-                    color: active ? '#fff' : 'var(--text-muted)',
-                    transition: 'all 0.2s',
-                    flexShrink: 0,
-                    boxShadow: active ? '0 4px 12px rgba(108, 99, 255, 0.2)' : 'none'
-                  }}>
-                    {i === 0 ? '🏠' : (i === 1 ? '📄' : (i === 2 ? '✨' : (i === 3 ? '🎨' : (i === 4 ? '🚀' : (i === 5 ? '🤖' : (i === 6 ? '🎤' : '✉️'))))))}
-                  </div>
-                  {i < navItems.length - 1 && (
-                    <div style={{ width: '12px', height: '1px', background: 'var(--border)', margin: '0 4px' }} />
-                  )}
-                </Link>
-              );
-            })}
+            {navItems.map((item, i) => (
+              <Link key={item.href} href={item.href} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{
+                  width: '26px',
+                  height: '26px',
+                  borderRadius: '50%',
+                  background: isActive(item.href, item.exact) ? 'var(--gradient-primary)' : 'var(--surface)',
+                  border: `2px solid ${isActive(item.href, item.exact) ? 'var(--accent-primary)' : 'var(--border)'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: isActive(item.href, item.exact) ? '#fff' : 'var(--text-muted)',
+                  transition: 'all 0.2s',
+                  flexShrink: 0,
+                }}>
+                  {i + 1}
+                </div>
+                {i < navItems.length - 1 && (
+                  <div style={{ width: '20px', height: '1px', background: 'var(--border)' }} />
+                )}
+              </Link>
+            ))}
           </div>
-
           <div className="topbar-right">
             <div className="user-avatar-sm">{user.name.charAt(0).toUpperCase()}</div>
           </div>

@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
+import ProfileCard from '@/components/ProfileCard';
+
 export default function EditProfilePage() {
   const { token, user } = useAuth();
   const router = useRouter();
@@ -20,6 +22,20 @@ export default function EditProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
+
+  // Derived profile for preview
+  const previewProfile = {
+    name: formData.name,
+    degree: formData.degree,
+    bio: formData.bio,
+    skills: formData.skills.split(',').map(s => s.trim()).filter(Boolean),
+    links: {
+      linkedin: formData.linkedin,
+      github: formData.github,
+      resume: formData.resume,
+      portfolio: formData.portfolio
+    }
+  };
 
   useEffect(() => {
     if (!token) return;
@@ -83,57 +99,80 @@ export default function EditProfilePage() {
   if (loading) return <div>Loading profile...</div>;
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>👤 Edit Profile</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Update your personal details to display on your dashboard.</p>
+    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ marginBottom: '32px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px' }}>👤 Your Professional Profile</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>This information is used to match you with jobs and generates your AI brand.</p>
       </div>
 
-      <form onSubmit={handleSave} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div className="form-group">
-          <label className="label">Full Name</label>
-          <input className="input" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
-        </div>
-        <div className="form-group">
-          <label className="label">Degree / Title</label>
-          <input className="input" placeholder="e.g. B.S. Computer Science / Full-Stack Engineer" value={formData.degree} onChange={e => setFormData({ ...formData, degree: e.target.value })} />
-        </div>
-        <div className="form-group">
-          <label className="label">Short Bio</label>
-          <textarea className="textarea" placeholder="A short catchphrase or intro..." value={formData.bio} onChange={e => setFormData({ ...formData, bio: e.target.value })} style={{ minHeight: '80px' }} />
-        </div>
-        <div className="form-group">
-          <label className="label">Skills (comma separated)</label>
-          <input className="input" placeholder="React, Node.js, Python" value={formData.skills} onChange={e => setFormData({ ...formData, skills: e.target.value })} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 450px', gap: '32px', alignItems: 'start' }} className="grid-2col">
+        {/* FORM */}
+        <form onSubmit={handleSave} className="card" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>Edit Details</h2>
+          
           <div className="form-group">
-            <label className="label">LinkedIn URL</label>
-            <input className="input" value={formData.linkedin} onChange={e => setFormData({ ...formData, linkedin: e.target.value })} />
+            <label className="label">Display Name</label>
+            <input className="input" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
           </div>
           <div className="form-group">
-            <label className="label">GitHub URL</label>
-            <input className="input" value={formData.github} onChange={e => setFormData({ ...formData, github: e.target.value })} />
+            <label className="label">Headline / Degree</label>
+            <input className="input" placeholder="e.g. B.S. Computer Science / Full-Stack Engineer" value={formData.degree} onChange={e => setFormData({ ...formData, degree: e.target.value })} />
           </div>
           <div className="form-group">
-            <label className="label">Resume URL</label>
-            <input className="input" placeholder="Google Drive or deployed link" value={formData.resume} onChange={e => setFormData({ ...formData, resume: e.target.value })} />
+            <label className="label">Professional Bio</label>
+            <textarea className="textarea" placeholder="A short catchphrase or intro..." value={formData.bio} onChange={e => setFormData({ ...formData, bio: e.target.value })} style={{ minHeight: '100px' }} />
           </div>
           <div className="form-group">
-            <label className="label">Portfolio URL</label>
-            <input className="input" placeholder="Link to your portfolio site" value={formData.portfolio} onChange={e => setFormData({ ...formData, portfolio: e.target.value })} />
+            <label className="label">Top Skills (comma separated)</label>
+            <input className="input" placeholder="React, Node.js, Python" value={formData.skills} onChange={e => setFormData({ ...formData, skills: e.target.value })} />
           </div>
-        </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="form-group">
+              <label className="label">LinkedIn URL</label>
+              <input className="input" value={formData.linkedin} onChange={e => setFormData({ ...formData, linkedin: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="label">GitHub URL</label>
+              <input className="input" value={formData.github} onChange={e => setFormData({ ...formData, github: e.target.value })} />
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="form-group">
+              <label className="label">Resume Link</label>
+              <input className="input" placeholder="Google Drive or deployed link" value={formData.resume} onChange={e => setFormData({ ...formData, resume: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="label">Portfolio URL</label>
+              <input className="input" placeholder="Link to your portfolio site" value={formData.portfolio} onChange={e => setFormData({ ...formData, portfolio: e.target.value })} />
+            </div>
+          </div>
 
-        {msg && <div style={{ fontSize: '14px', color: msg.includes('✅') ? 'var(--accent-success)' : 'var(--accent-danger)' }}>{msg}</div>}
+          {msg && <div style={{ 
+            fontSize: '14px', 
+            padding: '12px', 
+            borderRadius: 'var(--radius-md)',
+            background: msg.includes('✅') ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+            color: msg.includes('✅') ? 'var(--accent-success)' : 'var(--accent-danger)' 
+          }}>{msg}</div>}
 
-        <div style={{ display: 'flex', gap: '12px', marginTop: '12px', justifyContent: 'flex-end' }}>
-          <button type="button" className="btn btn-ghost" onClick={() => router.push('/dashboard')}>Cancel</button>
-          <button type="submit" className="btn btn-primary" disabled={saving}>
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '12px', justifyContent: 'flex-end' }}>
+            <button type="button" className="btn btn-ghost" onClick={() => router.push('/dashboard')}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? 'Saving...' : 'Save Profile'}
+            </button>
+          </div>
+        </form>
+
+        {/* PREVIEW */}
+        <div style={{ position: 'sticky', top: '24px' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Card Preview</h2>
+          <ProfileCard user={user} profile={previewProfile} />
+          
+          <div className="card-glass" style={{ marginTop: '24px', padding: '20px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+            <p>💡 <strong>Tip:</strong> Keep your bio concise and professional. Your headline should reflect your current role or target career goal.</p>
+          </div>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

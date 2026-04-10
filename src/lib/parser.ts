@@ -1,16 +1,14 @@
-import { PDFParse } from 'pdf-parse';
+import pdf from 'pdf-parse';
 
 export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   try {
-    const parser = new PDFParse({ data: buffer });
-    const data = await parser.getText();
-    return data.text || '';
+    const data = await pdf(buffer);
+    return data.text;
   } catch (err) {
     console.error('PDF Parse Error:', err);
     throw new Error('Failed to parse PDF file');
   }
 }
-
 
 export function extractJSON(text: string): any {
   try {
