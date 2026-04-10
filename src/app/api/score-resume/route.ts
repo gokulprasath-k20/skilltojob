@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { extractTextFromImage, calculateResumeScore } from '@/lib/ai';
 import { openai } from '@/lib/ai';
 import { getUserFromRequest } from '@/lib/auth';
+import { extractTextFromPDF, extractJSON } from '@/lib/parser';
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,12 +23,15 @@ export async function POST(req: NextRequest) {
           const base64 = Buffer.from(buffer).toString('base64');
           extractedText = await extractTextFromImage(base64, file.type);
        } else if (file.type === 'application/pdf') {
-          return NextResponse.json({ error: 'PDF parsing is advanced. Please upload as Image or Paste Text directly.' }, { status: 400 });
+          const buffer = await file.arrayBuffer();
+          extractedText = await extractTextFromPDF(Buffer.from(buffer));
        } else {
           extractedText = await file.text();
        }
-    } else {
-      return NextResponse.json({ error: 'No file or text provided' }, { status: 400 });
+    }
+
+    if (!extractedText || extractedText.trim().length < 10) {
+      return NextResponse.json({ error: 'No readable text content found in your resume.' }, { status: 400 });
     }
 
     // 1. Parse raw text to generic Resume JSON
@@ -57,13 +61,10 @@ If any field is missing, leave it blank or empty array.
     });
 
     const rsString = completion.choices[0]?.message?.content || '{}';
-    const cleaned = rsString.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const parsedData = JSON.parse(cleaned);
+    const parsedData = extractJSON(rsString);
 
     // 2. Score it
     const scoreResult = await calculateResumeScore(parsedData);
-    
-    // Stash the score temporarily in local cache if frontend wants it.
     
     return NextResponse.json({ 
        score: scoreResult.score,
@@ -73,7 +74,11 @@ If any field is missing, leave it blank or empty array.
     });
 
   } catch (err: any) {
-    console.error('Score API Error:', err);
-    return NextResponse.json({ error: 'Failed to parse and score resume.' }, { status: 500 });
+    console.error('Score API Error details:', err);
+    return NextResponse.json({ 
+      error: 'Failed to parse and score resume.',
+      details: err.message
+    }, { status: 500 });
   }
 }
+

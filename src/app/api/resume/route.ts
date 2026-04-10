@@ -4,6 +4,8 @@ import Resume from '@/models/Resume';
 import { getUserFromRequest } from '@/lib/auth';
 import { improveResumeContent, calculateResumeScore } from '@/lib/ai';
 
+import { extractJSON } from '@/lib/parser';
+
 export async function GET(req: NextRequest) {
   try {
     const user = getUserFromRequest(req);
@@ -12,7 +14,7 @@ export async function GET(req: NextRequest) {
     const resumes = await Resume.find({ userId: user.userId }).sort({ createdAt: -1 });
     return NextResponse.json({ resumes });
   } catch (err) {
-    console.error(err);
+    console.error('Resume GET Error:', err);
     return NextResponse.json({ error: 'Failed to fetch resumes' }, { status: 500 });
   }
 }
@@ -36,12 +38,13 @@ export async function POST(req: NextRequest) {
     if (aiEnhance) {
       try {
         const improved = await improveResumeContent(data);
-        const cleaned = improved.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-        finalData = JSON.parse(cleaned);
-      } catch {
+        finalData = extractJSON(improved);
+      } catch (err) {
+        console.error('AI Enhancement failed, using original data:', err);
         // Use original data if AI fails
       }
     }
+
 
     // AI Score
     let score, scoreFeedback, scoreSuggestions;

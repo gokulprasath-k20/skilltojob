@@ -145,7 +145,7 @@ export default function ScoreResumePage() {
              <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '24px' }}>
                Drag & drop an image or click to select file.
              </p>
-             <input type="file" id="file-upload" accept="image/*,text/plain" style={{ display: 'none' }} onChange={handleChange} />
+             <input type="file" id="file-upload" accept="image/*,application/pdf,text/plain" style={{ display: 'none' }} onChange={handleChange} />
              <button className="btn btn-primary" disabled={loading} style={{ pointerEvents: 'none' }}>
                {loading ? 'Processing...' : 'Browse Files'}
              </button>

@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import Groq from 'groq-sdk';
+import { extractJSON } from './parser';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -90,9 +91,9 @@ Return ONLY valid JSON in this exact format:
 
   const result = await aiComplete(resumeText, systemPrompt);
   try {
-    const cleaned = result.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    return JSON.parse(cleaned);
-  } catch {
+    return extractJSON(result);
+  } catch (err) {
+    console.error('analyzeResumeForJobs failed to parse JSON:', err);
     return { skills: [], roles: [], experience: 'Entry', searchKeywords: ['software developer'] };
   }
 }
@@ -117,9 +118,9 @@ Description: ${jobDescription?.substring(0, 500) || 'Not provided'}`;
 
   const result = await aiComplete(prompt, systemPrompt);
   try {
-    const cleaned = result.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    return JSON.parse(cleaned);
-  } catch {
+    return extractJSON(result);
+  } catch (err) {
+    console.error('explainJobMatch failed to parse JSON:', err);
     return {
       matchReason: `This ${jobTitle} position aligns with your skill set.`,
       missingSkills: [],
@@ -144,9 +145,9 @@ Return ONLY valid JSON:
 
   const result = await aiComplete(JSON.stringify(data), systemPrompt);
   try {
-    const cleaned = result.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    return JSON.parse(cleaned);
-  } catch {
+    return extractJSON(result);
+  } catch (err) {
+    console.error('calculateResumeScore failed to parse JSON:', err);
     return { score: 70, feedback: ['Resume analyzed'], suggestions: ['Add more details'] };
   }
 }
@@ -185,9 +186,9 @@ Return ONLY valid JSON array of strings:
   
   const result = await aiComplete(prompt, systemPrompt);
   try {
-    const cleaned = result.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    return JSON.parse(cleaned);
-  } catch {
+    return extractJSON(result);
+  } catch (err) {
+    console.error('generateInterviewQuestions failed to parse JSON:', err);
     return [
       `Could you describe your experience as a ${role}?`,
       `What is the most challenging technical problem you have solved?`,
@@ -213,9 +214,9 @@ Return ONLY valid JSON:
   
   const result = await aiComplete(prompt, systemPrompt);
   try {
-    const cleaned = result.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    return JSON.parse(cleaned);
-  } catch {
+    return extractJSON(result);
+  } catch (err) {
+    console.error('evaluateInterviewAnswer failed to parse JSON:', err);
     return {
       score: 70,
       feedback: "Good attempt, but could use more specific examples.",
@@ -252,9 +253,9 @@ Return ONLY valid JSON:
 
   const result = await aiComplete(`Requirement: ${requirement}`, systemPrompt);
   try {
-    const cleaned = result.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    return JSON.parse(cleaned);
-  } catch {
+    return extractJSON(result);
+  } catch (err) {
+    console.error('suggestProjects failed to parse JSON:', err);
     return [
       { title: "Task Manager Dashboard", description: "A Kanban style task manager.", learningOutcomes: ["State Management", "Drag and Drop"] },
       { title: "E-Commerce Store", description: "Online store with cart and checkout.", learningOutcomes: ["Payment Integration", "Context API"] },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { extractTextFromImage, improveResumeContent } from '@/lib/ai';
-import { openai } from '@/lib/ai';
+import { extractTextFromImage, openai } from '@/lib/ai';
+import { extractTextFromPDF, extractJSON } from '@/lib/parser';
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,15 +19,15 @@ export async function POST(req: NextRequest) {
           const base64 = Buffer.from(buffer).toString('base64');
           extractedText = await extractTextFromImage(base64, file.type);
        } else if (file.type === 'application/pdf') {
-          // Because typical PDF parsing needs a library which we may not have, 
-          // we can send PDF contents if we have pdf2json or similar, but for simplicity let's do a basic read.
-          // In a real scenario we'd use pdf-parse. If not available, we throw error.
-          return NextResponse.json({ error: 'PDF parsing is advanced. Please upload as Image or Paste Text directly.' }, { status: 400 });
+          const buffer = await file.arrayBuffer();
+          extractedText = await extractTextFromPDF(Buffer.from(buffer));
        } else {
           extractedText = await file.text();
        }
-    } else {
-      return NextResponse.json({ error: 'No file or text provided' }, { status: 400 });
+    }
+
+    if (!extractedText || extractedText.trim().length < 10) {
+      return NextResponse.json({ error: 'No readable text content found.' }, { status: 400 });
     }
 
     // Now convert the raw text into our Structured Resume Data
@@ -57,12 +57,16 @@ If any field is missing, leave it blank or empty array.
     });
 
     const rsString = completion.choices[0]?.message?.content || '{}';
-    const cleaned = rsString.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const parsedData = extractJSON(rsString);
 
-    return NextResponse.json({ data: JSON.parse(cleaned) });
+    return NextResponse.json({ data: parsedData });
 
   } catch (err: any) {
-    console.error('Parse Error:', err);
-    return NextResponse.json({ error: 'Failed to parse resume.' }, { status: 500 });
+    console.error('Parse Error details:', err);
+    return NextResponse.json({ 
+      error: 'Failed to parse resume.',
+      details: err.message
+    }, { status: 500 });
   }
 }
+
