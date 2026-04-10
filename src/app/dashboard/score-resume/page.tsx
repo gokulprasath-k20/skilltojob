@@ -60,19 +60,28 @@ export default function ScoreResumePage() {
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-      const data = await res.json();
-      if (res.ok) {
-        setScoreData({
-           score: data.score,
-           feedback: data.feedback,
-           suggestions: data.suggestions
-        });
-        localStorage.setItem('s2j_resume_snapshot', JSON.stringify({ ...data.parsedData, _score: data.score }));
-      } else {
-        setErrorMsg(data.error || 'Failed to process file.');
+
+      if (!res.ok) {
+        let errorData;
+        try {
+          errorData = await res.json();
+        } catch {
+          throw new Error(`Server returned status ${res.status}`);
+        }
+        setErrorMsg(errorData.error || `Error ${res.status}: Failed to process file.`);
+        return;
       }
-    } catch {
-      setErrorMsg('Network error. Failed to process file.');
+
+      const data = await res.json();
+      setScoreData({
+         score: data.score,
+         feedback: data.feedback,
+         suggestions: data.suggestions
+      });
+      localStorage.setItem('s2j_resume_snapshot', JSON.stringify({ ...data.parsedData, _score: data.score }));
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      setErrorMsg(err.message || 'Network error. Failed to process file.');
     } finally {
       setLoading(false);
     }
