@@ -54,11 +54,17 @@ export default function JobsPage() {
         body: formData, // the browser will automatically set the appropriate Content-Type for FormData
       });
       
+      const resText = await res.text();
       let data;
       try {
-        data = await res.json();
+        data = JSON.parse(resText);
       } catch (err) {
-        throw new Error(`Server returned an invalid response (Status: ${res.status}). This could be a timeout or a server error.`);
+        // If it's not JSON, it's likely an HTML error page from the server/hosting
+        const isHtml = resText.toLowerCase().includes('<!doctype html>') || resText.toLowerCase().includes('<html>');
+        if (isHtml) {
+          throw new Error(`Server Error (Status: ${res.status}). The server returned an HTML error page instead of data. Check server logs.`);
+        }
+        throw new Error(`Invalid response format (Status: ${res.status}). Body begins with: ${resText.slice(0, 50)}`);
       }
       
       if (!res.ok) {

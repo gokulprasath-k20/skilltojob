@@ -124,23 +124,32 @@ export async function POST(req: NextRequest) {
 
       if (file) {
         const buffer = Buffer.from(await file.arrayBuffer());
-        if (file.type === 'application/pdf') {
-          const pdfData = await pdfParse(buffer);
-          resumeText = pdfData.text;
-        } else if (file.type.startsWith('image/')) {
-          const base64 = buffer.toString('base64');
-          resumeText = await extractTextFromImage(base64, file.type);
-        } else if (file.type === 'text/plain') {
-          resumeText = buffer.toString('utf-8');
-        } else {
-          return NextResponse.json({ error: 'Unsupported file type. Use PDF, TXT, or Image.' }, { status: 400 });
+        try {
+          if (file.type === 'application/pdf') {
+            const pdfData = await pdfParse(buffer);
+            resumeText = pdfData.text;
+          } else if (file.type.startsWith('image/')) {
+            const base64 = buffer.toString('base64');
+            resumeText = await extractTextFromImage(base64, file.type);
+          } else if (file.type === 'text/plain') {
+            resumeText = buffer.toString('utf-8');
+          } else {
+            return NextResponse.json({ error: 'Unsupported file type.' }, { status: 400 });
+          }
+        } catch (fileErr: any) {
+          console.error('File parsing error:', fileErr);
+          return NextResponse.json({ error: 'Failed to read file内容', details: fileErr.message }, { status: 422 });
         }
       } else if (textParam) {
         resumeText = textParam;
       }
     } else {
-      const body = await req.json();
-      resumeText = body.resumeText;
+      try {
+        const body = await req.json();
+        resumeText = body.resumeText;
+      } catch {
+        return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+      }
     }
 
     if (!resumeText?.trim()) {
