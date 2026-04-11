@@ -17,7 +17,8 @@ export default function EditProfilePage() {
     linkedin: '',
     github: '',
     resume: '',
-    portfolio: ''
+    portfolio: '',
+    avatar: ''
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -34,7 +35,8 @@ export default function EditProfilePage() {
       github: formData.github,
       resume: formData.resume,
       portfolio: formData.portfolio
-    }
+    },
+    avatar: formData.avatar
   };
 
   useEffect(() => {
@@ -51,7 +53,8 @@ export default function EditProfilePage() {
             linkedin: data.user.links?.linkedin || '',
             github: data.user.links?.github || '',
             resume: data.user.links?.resume || '',
-            portfolio: data.user.links?.portfolio || ''
+            portfolio: data.user.links?.portfolio || '',
+            avatar: data.user.avatar || ''
           });
         }
         setLoading(false);
@@ -74,7 +77,8 @@ export default function EditProfilePage() {
         github: formData.github,
         resume: formData.resume,
         portfolio: formData.portfolio
-      }
+      },
+      avatar: formData.avatar
     };
 
     try {
@@ -113,6 +117,46 @@ export default function EditProfilePage() {
           <div className="form-group">
             <label className="label">Display Name</label>
             <input className="input" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
+          </div>
+
+          <div className="form-group">
+            <label className="label">Profile Picture</label>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <input 
+                className="input" 
+                placeholder="Image URL (https://...)" 
+                value={formData.avatar} 
+                onChange={e => setFormData({ ...formData, avatar: e.target.value })} 
+                style={{ flex: 1 }}
+              />
+              <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>OR</span>
+              <button 
+                type="button" 
+                className="btn btn-secondary btn-sm"
+                onClick={() => document.getElementById('avatar-upload')?.click()}
+              >
+                Upload
+              </button>
+              <input 
+                type="file" 
+                id="avatar-upload" 
+                accept="image/*" 
+                style={{ display: 'none' }} 
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setFormData({ ...formData, avatar: reader.result as string });
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+            </div>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>
+              Upload a landscape/square photo or paste a URL.
+            </p>
           </div>
           <div className="form-group">
             <label className="label">Headline / Degree</label>

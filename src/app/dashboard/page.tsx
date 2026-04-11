@@ -170,13 +170,20 @@ export default function DashboardPage() {
               Your career pipeline is <strong style={{ color: 'var(--accent-primary)' }}>{Math.round((totalCompleted / totalSteps) * 100)}% complete</strong>. Let's keep going!
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
             {resumeScore !== null && (
               <span className="badge badge-success">📊 Score: {resumeScore}/100</span>
             )}
             <span className="badge badge-primary">AI Ready</span>
           </div>
         </div>
+
+        {profile && (
+          <div style={{ marginTop: '32px', animation: 'slideUp 0.5s ease' }}>
+            <ProfileCard user={user} profile={profile} />
+          </div>
+        )}
 
         {/* Overall Pipeline Progress Bar */}
         <div style={{ marginTop: '20px' }}>
@@ -256,7 +263,8 @@ export default function DashboardPage() {
                   <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)', marginBottom: '4px' }}>{item.label}</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '10px', lineHeight: 1.4 }}>{item.desc}</div>
                   {item.step === 8 && profile?.name ? (
-                     <div style={{ marginTop: 'auto', fontSize: '12px', color: 'var(--accent-primary)', fontWeight: 600 }}>
+                     <div style={{ marginTop: 'auto', fontSize: '12px', color: 'var(--accent-primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {profile.avatar && <img src={profile.avatar} style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover' }} alt="" />}
                         {profile.name} • {profile.skills?.length || 0} Skills
                      </div>
                   ) : (
