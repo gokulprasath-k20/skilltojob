@@ -170,7 +170,6 @@ export default function DashboardPage() {
               Your career pipeline is <strong style={{ color: 'var(--accent-primary)' }}>{Math.round((totalCompleted / totalSteps) * 100)}% complete</strong>. Let's keep going!
             </p>
           </div>
-          </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
             {resumeScore !== null && (
               <span className="badge badge-success">📊 Score: {resumeScore}/100</span>
